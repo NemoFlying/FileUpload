@@ -1,0 +1,78 @@
+﻿
+@{
+    ViewBag.Title = "文件上传Demo";
+}
+<style>
+    div.form-item {
+        margin-top: 20px;
+    }
+
+    form {
+        border: 2px solid green;
+        margin: 5px;
+    }
+</style>
+
+<form action="../FileUpLoad/ReciveFile2" method="post" enctype="multipart/form-data">
+    <div class="form-item">
+        <label for="Param1">自定义参数</label>
+        <input type="text" name="Param1" required placeholder="第一个传入参数" value="参数一" />
+    </div>
+    <div class="form-item">
+        <label for="file1">文件1</label>
+        <input type="file" name="file1" />
+    </div>
+    <div class="form-item">
+        <label for="file2">文件2</label>
+        <input type="file" name="file2" />
+    </div>
+    <div class="form-item">
+        <input type="submit" value="提交" />
+    </div>
+</form>
+
+<form action="../FileUpLoad/ReciveFile2" method="post" enctype="multipart/form-data">
+    <div class="form-item">
+        <label for="Param1">自定义参数</label>
+        <input type="text" name="Param1" required placeholder="第一个传入参数" value="参数一" />
+    </div>
+    <div class="form-item">
+        <label for="file1">文件1</label>
+        <input type="file" name="file1" />
+    </div>
+    <div class="form-item">
+        <label for="file2">文件2</label>
+        <input type="file" name="file2" />
+    </div>
+    <div class="form-item">
+        <input type="button" value="提交" onclick="ajaxCommit(this)" />
+    </div>
+</form>
+
+@section scripts{
+    <script type="text/javascript">
+        function ajaxCommit(opt) {
+            $this = $(opt);
+            var formData = new FormData($this.parents("form")[0]);
+            $.ajax({
+                url: "../FileUpLoad/ReciveFile2",
+                method: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,//避免对formData序列化处理
+                dataType: "txt",
+                success: function (reData) {
+                    alert(reData);
+                },
+                error: function (reData) {
+                    console.log(reData);
+                }
+            })
+
+        }
+
+
+
+
+    </script>
+    }
