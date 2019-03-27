@@ -44,11 +44,14 @@ namespace FileUpLoad.Controllers
             }
         }
         [HttpPost]
-        public void ReciveFile2(TestFormInput input)
+        public string ReciveFile2(TestFormInput input)
         {
+            var result = input.SaveFormFiles();
+            return "OK";
             //var files = input.Files;
-            var files = HttpContext.Request.Files;
+            //var files = HttpContext.Request.Files;
 
+            
             //foreach(var file in files.Keys)
             //for (var i = 0; i < files.Count; i++)
             //{

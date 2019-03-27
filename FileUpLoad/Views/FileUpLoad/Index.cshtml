@@ -38,11 +38,11 @@
     </div>
     <div class="form-item">
         <label for="file1">文件1</label>
-        <input type="file" name="file1" />
+        <input type="file" name="file1" maxFilesSize= "1024*1024*20" required="required" />
     </div>
     <div class="form-item">
         <label for="file2">文件2</label>
-        <input type="file" name="file2" />
+        <input type="file" name="file2" maxFilesSize= "1024*1024*50"  />
     </div>
     <div class="form-item">
         <input type="button" value="提交" onclick="ajaxCommit(this)" />
@@ -50,17 +50,47 @@
 </form>
 
 @section scripts{
+    <script src="~/Scripts/jquery.nemo.ajaxform.js"></script>
     <script type="text/javascript">
         function ajaxCommit(opt) {
-            $this = $(opt);
-            var formData = new FormData($this.parents("form")[0]);
-            $.ajax({
+            $form = $(opt).parents("form");
+            var $files = $form.find("input[type=file]");
+            alert($files.length);
+            //$files.each(function () {
+            //    var $this = $(this);
+            //    alert($this.attr("required"));
+            //    if (this.files.length == 0) {
+            //        alert("请选择要上传的文件");
+            //        return false;
+            //    };
+            //    var file = this.files[0];
+            //    //上传文件扩展名限制【当用户换一个扩展名还是可以上传Bug】
+            //    var accept = $(this).attr("accept");
+            //    accept = accept == undefined ? "*" : accept.toLowerCase(); //"*" 表示类型无限制
+            //    var fileName = file.name;
+            //    var fileExtension = $.trim(fileName.substring(fileName.lastIndexOf(".")).toLowerCase());
+            //    if (accept != "*" && accept.indexOf(fileExtension) == -1) {
+            //        alert("上传文件 【" + file.name + "】 类型不符合要求【" + accept + "】");
+            //        return false;
+            //    }
+            //    //上传问价大小限制
+            //    var maxFileSize = $this.attr("maxFilesSize");  //用户配置大小
+            //    maxFileSize = maxFileSize == undefined ? 0 : eval(maxFileSize); //0表示文件大小无限制
+            //    if (maxFileSize != 0 && file.size > maxFileSize) {
+            //        alert("上传文件 【" + file.name + "】 大小超出限制【 " + (maxFileSize / 1024 / 1024) + "M】 ");
+            //        return false;
+            //    }
+            //});
+
+            //return false;
+            //var formData = new FormData($this.parents("form")[0]);
+            $.fn.nemoAjaxForm({
                 url: "../FileUpLoad/ReciveFile2",
                 method: "POST",
-                data: formData,
+                form: $form,
                 contentType: false,
                 processData: false,//避免对formData序列化处理
-                dataType: "txt",
+                dataType: "text",
                 success: function (reData) {
                     alert(reData);
                 },
@@ -70,8 +100,6 @@
             })
 
         }
-
-
 
 
     </script>

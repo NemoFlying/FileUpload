@@ -13,7 +13,7 @@ namespace FileUpLoad.Models
         {
             //配置文件保存路径
             base.SetFileSavePathAndName("file1", @"D:\UploadTest\Img\");
-            base.SetFileSavePathAndName("file2", @"D:\UploadTest\文件");
+            base.SetFileSavePathAndName("file2", @"D:\UploadTest\文件\");
         }
 
         /// <summary>

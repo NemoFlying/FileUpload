@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Web;
 
@@ -116,6 +117,9 @@ namespace FileUpLoad.Models
         /// <returns>返回文件保存完整路径</returns>
         public string SaveAs()
         {
+            //检查文件夹是否存在，不存在则创建
+            if (!Directory.Exists(SavePath))
+                Directory.CreateDirectory(SavePath);
             var fileFullPath = SavePath + SaveName;
             _fileData.SaveAs(fileFullPath);
             return fileFullPath;
