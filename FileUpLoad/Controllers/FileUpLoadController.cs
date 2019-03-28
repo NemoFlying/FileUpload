@@ -74,5 +74,15 @@ namespace FileUpLoad.Controllers
             //    }
             //}
         }
+
+        [HttpPost]
+        public JsonResult ReciveFile3(FormInput2 input)
+        {
+            var kk = input.SaveBlock();
+
+            return Json(kk, JsonRequestBehavior.AllowGet);
+        }
+
+
     }
 }

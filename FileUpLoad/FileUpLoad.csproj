@@ -131,7 +131,10 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\FileBlockSaveOutput.cs" />
     <Compile Include="Models\FormFileInput.cs" />
+    <Compile Include="Models\FormFileUploadInput.cs" />
+    <Compile Include="Models\FormInput2.cs" />
     <Compile Include="Models\TestFormInput.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
