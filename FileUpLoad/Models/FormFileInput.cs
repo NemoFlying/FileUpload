@@ -29,10 +29,14 @@ namespace FileUpLoad.Models
                 formFiles = new List<FormFileInfo>();
                 for(var i = 0;i<reqFiles.Count;i++)
                 {
-                    formFiles.Add(new FormFileInfo(reqFiles[i])
+                    if (!string.IsNullOrEmpty(reqFiles[i].FileName))
                     {
-                        Key = reqFiles.Keys[i]
-                    });
+                        formFiles.Add(new FormFileInfo(reqFiles[i])
+                        {
+                            Key = reqFiles.Keys[i]
+                        });
+                    }
+                    
                 }
             }
         }
@@ -85,7 +89,24 @@ namespace FileUpLoad.Models
     public class FormFileInfo
     {
         /// <summary>
-        /// 单个文件信息
+        /// 臨時編號
+        /// </summary>
+        public string UpLoadId { get; set; }
+
+        /// <summary>
+        /// 文件塊數
+        /// </summary>
+        public int BlockTotal { get; set; }
+
+        /// <summary>
+        /// 當前塊數
+        /// </summary>
+        public int BlockIndex { get; set; }
+
+
+
+        /// <summary>
+        /// 单个文件數據
         /// </summary>
         private HttpPostedFile _fileData { get; set; }
         public FormFileInfo(HttpPostedFile fileData)
@@ -93,7 +114,6 @@ namespace FileUpLoad.Models
             _fileData = fileData;
             SaveName = _fileData.FileName;
         }
-
         /// <summary>
         /// 和Form表单中的name属性对应
         /// </summary>
@@ -110,7 +130,7 @@ namespace FileUpLoad.Models
         /// </summary>
         /// 默认路径为程式运行目录下UpLoad
         public string SavePath { get; set; } = Environment.CurrentDirectory + @"\UpLoad\";
-        
+
         /// <summary>
         /// 保存文件
         /// </summary>
