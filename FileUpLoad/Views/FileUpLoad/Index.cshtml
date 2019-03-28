@@ -65,6 +65,23 @@
         <input type="button" value="提交" onclick="ajaxCommit1(this)" />
     </div>
 </form>
+<form action="../FileUpLoad/ReciveFile4" method="post" enctype="multipart/form-data">
+    <div class="form-item">
+        <label for="Param1">自定义参数</label>
+        <input type="text" name="Param1" required placeholder="第一个传入参数" value="参数一" />
+    </div>
+    <div class="form-item">
+        <label for="file1">文件1</label>
+        <input type="file" name="file1" maxFilesSize="1024*1024*20" required="required" />
+    </div>
+    @*<div class="form-item">
+            <label for="file2">文件2</label>
+            <input type="file" name="file2" maxFilesSize="1024*1024*1024" />
+        </div>*@
+    <div class="form-item">
+        <input type="button" value="提交" onclick="ajaxCommit2(this)" />
+    </div>
+</form>
 @section scripts{
     <script src="~/Scripts/jquery.nemo.ajaxform.js"></script>
     <script type="text/javascript">
@@ -73,6 +90,63 @@
         function upLoadBlock(file) {
             
         }
+
+        function ajaxCommit2(opt) {
+            var $form = $(opt).parents("form");
+            var $fileInput = $form.find("input[type=file]");
+            $fileInput.each(function () {
+                var file = this.files[0];
+                var blockSize = 1024 * 1024 * 2;//块大小
+                var totalSize = file.size;
+                var blockCnt = Math.ceil(totalSize / blockSize);
+                var upLoadId = null;
+                var index = 0;
+                var formData = new FormData();
+                formData.append('FileSaveName', file.name);
+                formData.append('BlockTotal', blockCnt);
+                formData.append('BlockIndex', index);
+                formData.append('UpLoadId', null);
+                formData.append('DataBlock', null);
+                //alert(blockCnt);
+                (function upload() {
+                    index++;
+                    var start = (index - 1) * blockSize;
+                    var end = Math.min(totalSize, start + blockSize);
+                    formData.set('DataBlock', file.slice(start, end));
+                    formData.set('BlockIndex', index);
+                    formData.set('UpLoadId', upLoadId);
+                    $.ajax({
+                        url: "../FileUpLoad/ReciveFile4",
+                        method: 'post',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        dataType: 'json',
+                        success: function (reData) {
+                            console.log(reData);
+                            if (index == 1)
+                                upLoadId = reData.UpLoadId;
+                            if (index < blockCnt) {
+                                upload();
+                            }
+                            else {
+                                console.log("上传成功！");
+                            }
+                        },
+                        error: function (e) {
+                            console.log(e);
+                        }
+                    })
+                })()
+
+            })
+
+
+        }
+
+
+
+
 
         function ajaxCommit1(opt) {
             var $form = $(opt).parents("form");

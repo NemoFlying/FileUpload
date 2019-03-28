@@ -27,11 +27,11 @@ namespace FileUpLoad.Models
         /// </summary>
         public List<string> filesPath { get; set; } = new List<string>();
 
-
+        public List<FormFileInfo> Files { get; set; } = new List<FormFileInfo>();
 
     }
 
-    public class FormFileInfo2
+    public abstract class FormFileInfo
     {
         /// <summary>
         /// 臨時編號
@@ -51,20 +51,20 @@ namespace FileUpLoad.Models
         /// <summary>
         /// 单个Block數據
         /// </summary>
-        private HttpPostedFile _fileBlockData { get; set; }
+        public HttpPostedFile FileBlockData { get; set; }
 
-        public FormFileInfo2(HttpPostedFile fileData)
-        {
-            _fileBlockData = fileData;
-            FileSaveName = _fileBlockData.FileName;
-        }
+        private string _fileSaveName { get; set; }
 
         /// <summary>
         /// 另存为文件名称
         /// 默认为原文件名
         /// </summary>
+        //public string FileSaveName
+        //{
+        //    get { return _fileSaveName == null ? FileBlockData.FileName : _fileSaveName; }
+        //    set { _fileSaveName = value; }
+        //}
         public string FileSaveName { get; set; }
-
         /// <summary>
         /// 文件保存路径
         /// </summary>
@@ -72,77 +72,99 @@ namespace FileUpLoad.Models
         public string FileSavePath { get; set; } = Environment.CurrentDirectory + @"\UpLoad\";
 
         /// <summary>
+        /// 
+        /// </summary>
+        private string _blockTempSavePath { get; set; }
+        /// <summary>
         /// 临时文件夹
         /// </summary>
-        public string BlockTempSavePath { get { return FileSavePath + @"fileTemp\"; } }
+        public string BlockTempSavePath
+        {
+            get { return _blockTempSavePath == null ? FileSavePath : _blockTempSavePath; }
+            set { _blockTempSavePath = value; }
+        }
 
         /// <summary>
         /// 保存Block
         /// </summary>
-        public void Save()
+        public FormFileUploadOuput SaveFile()
         {
-            var blockName = ""; //块的名称 UploadId_BlockIndex
-            var blockFullPath = "";//块的完整路径+名称
-            var fileFullPath = Path.Combine(FileSavePath, FileSaveName); ;//文件保存的完整路径
-            if (BlockTotal == BlockIndex && BlockIndex == 1)
+            var output = new FormFileUploadOuput() {
+                BlockIndex = BlockIndex
+            };
+            try
             {
-                //单个文件
-                if(!Directory.Exists(FileSavePath))
+                var blockName = ""; //块的名称 UploadId_BlockIndex
+                var blockFullPath = "";//块的完整路径+名称
+                var fileFullPath = Path.Combine(FileSavePath, FileSaveName) ;//文件保存的完整路径
+                var blockTempSavePath = "";
+                if(BlockIndex>1&&string.IsNullOrEmpty(UpLoadId))
                 {
-                    Directory.CreateDirectory(FileSavePath);
+                    //接受的不是第一块且没有创建唯一标识
+                    output.BlockSaveStatus = false;
+                    output.FileSaveErrMsg = "当前不是第一块，且没有创建临时编号，请重新上传！";  //////////////////////////ERROR1
+                    return output;
                 }
-                _fileBlockData.SaveAs(fileFullPath);
-                return;
-            }
-
-            //处理Block
-            if(BlockIndex == 1) //第一个Block,创建唯一临时编号
-            {
-                UpLoadId = Guid.NewGuid().ToString().Replace("-", "");
-            }
-            blockName = $"{UpLoadId}_{BlockIndex}";
-            blockFullPath = Path.Combine(BlockTempSavePath, blockName);
-            if(!File.Exists(blockFullPath))
-            {
-                //已经上传该模块
-                return;
-            }
-            _fileBlockData.SaveAs(blockFullPath);
-
-            //判断是否最后一个Block【该方法只是适合Block依次传】
-            if(BlockTotal == BlockIndex)
-            {
-                var tmpBlock = Directory.GetFiles(BlockTempSavePath, $"{UpLoadId}*");
-                if (tmpBlock.Count()==BlockTotal)
+                //处理Block
+                if (BlockIndex == 1) //第一个Block,创建唯一临时编号
                 {
-                    //创建文件夹
-                    if(!Directory.Exists(FileSavePath))
+                    UpLoadId = Guid.NewGuid().ToString().Replace("-", "");
+                    blockTempSavePath = $@"{BlockTempSavePath}{UpLoadId}\";
+                    //创建临时数据保存文件夹
+                    if (!Directory.Exists(blockTempSavePath))
                     {
-                        Directory.CreateDirectory(FileSavePath);
+                        Directory.CreateDirectory(blockTempSavePath);
                     }
-                    using (var fs = new FileStream(fileFullPath, FileMode.Create))
+                }
+                output.UpLoadId = UpLoadId;
+                blockTempSavePath = $@"{BlockTempSavePath}\{UpLoadId}\";
+
+                blockName = $"{UpLoadId}_{BlockIndex}.block";                
+                blockFullPath = Path.Combine(blockTempSavePath, blockName);
+                if (File.Exists(blockFullPath))
+                {
+                    //已经上传该模块
+                    output.BlockSaveStatus = true;
+                    return output;
+                }
+                FileBlockData.SaveAs(blockFullPath);
+                output.BlockSaveStatus = true;
+                //判断是否最后一个Block【该方法只是适合Block依次传】
+                if (BlockTotal == BlockIndex)
+                {
+                    var tmpBlock = Directory.GetFiles(blockTempSavePath, $"{UpLoadId}*");
+                    if (tmpBlock.Count() == BlockTotal)
                     {
-                        for (var i = 1; i <= BlockTotal; i++)
+                        //创建文件夹
+                        if (!Directory.Exists(FileSavePath))
                         {
-                            var path = Path.Combine(BlockTempSavePath, $"{UpLoadId}_{i}.block");
-                            var bytes = File.ReadAllBytes(path);
-                            fs.Write(bytes, 0, bytes.Length);
+                            Directory.CreateDirectory(FileSavePath);
                         }
+                        using (var fs = new FileStream(fileFullPath, FileMode.Create))
+                        {
+                            for (var i = 1; i <= BlockTotal; i++)
+                            {
+                                var path = Path.Combine(blockTempSavePath, $"{UpLoadId}_{i}.block");
+                                var bytes = File.ReadAllBytes(path);
+                                fs.Write(bytes, 0, bytes.Length);
+                            }
+                        }
+                        output.FileSaveStatus = true;
                     }
-                }
-                else
-                {
-                    //文件上传失败【数据包丢失】
-                    //Directory.Delete(BlockTempSavePath, true);
-                }
-                //清除临时数据
-                foreach(var filePath in tmpBlock)
-                {
-                    File.Delete(filePath);
+                    else
+                    {
+                        //文件上传失败【数据包丢失】
+                        output.FileSaveErrMsg = "数据包丢失!";
+                    }
+                    //清除临时数据
+                    Directory.Delete(blockTempSavePath, true);
                 }
             }
-
-
+            catch(Exception ex)
+            {
+                output.FileSaveErrMsg = ex.ToString();
+            }
+            return output;
         }
 
 

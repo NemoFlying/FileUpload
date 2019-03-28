@@ -31,10 +31,10 @@ namespace FileUpLoad.Models
                 {
                     if (!string.IsNullOrEmpty(reqFiles[i].FileName))
                     {
-                        formFiles.Add(new FormFileInfo(reqFiles[i])
-                        {
-                            Key = reqFiles.Keys[i]
-                        });
+                        //formFiles.Add(new FormFileInfo(reqFiles[i])
+                        //{
+                        //    Key = reqFiles.Keys[i]
+                        //});
                     }
                     
                 }
@@ -49,16 +49,16 @@ namespace FileUpLoad.Models
         /// <param name="name">新名称可为空</param>
         public void SetFileSavePathAndName(string key,string path,string name)
         {
-            var formFile = formFiles?.Find(con => con.Key == key);
-            if (path != null && formFile != null)
-                formFile.SavePath = path;
-            if (formFile != null)
-            {
-                if (path != null)
-                    formFile.SavePath = path;
-                if (name != null)
-                    formFile.SaveName = name;
-            }
+            var formFile = formFiles?.Find(con => con.UpLoadId == key);
+            //if (path != null && formFile != null)
+            //    formFile.SavePath = path;
+            //if (formFile != null)
+            //{
+            //    if (path != null)
+            //        formFile.SavePath = path;
+            //    if (name != null)
+            //        formFile.SaveName = name;
+            //}
         }
 
         /// <summary>
@@ -77,16 +77,16 @@ namespace FileUpLoad.Models
         public string[,] SaveFormFiles()
         {
             string[,] reData = new string[formFiles.Count, 2];
-            for(var i = 0;i<formFiles.Count;i++)
-            {
-                reData[i, 0] = formFiles[i].Key;
-                reData[i,1] = formFiles[i].SaveAs();
-            }
+            //for (var i = 0; i < formFiles.Count; i++)
+            //{
+            //    reData[i, 0] = formFiles[i].Key;
+            //    reData[i, 1] = formFiles[i].SaveAs();
+            //}
             return reData;
         }
     }
 
-    public class FormFileInfo
+    public class FormFileInfo2
     {
         /// <summary>
         /// 臨時編號
@@ -109,7 +109,7 @@ namespace FileUpLoad.Models
         /// 单个文件數據
         /// </summary>
         private HttpPostedFile _fileData { get; set; }
-        public FormFileInfo(HttpPostedFile fileData)
+        public void FormFileInfo(HttpPostedFile fileData)
         {
             _fileData = fileData;
             SaveName = _fileData.FileName;

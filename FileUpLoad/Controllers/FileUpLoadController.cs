@@ -83,6 +83,22 @@ namespace FileUpLoad.Controllers
             return Json(kk, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpPost]
+        public JsonResult ReciveFile4(Test2FormInput input)
+        {
+            var result = input.SaveFile();
+            if(!result.FileSaveStatus)
+            {
+                //文件保存完成
+                //做其他表单出来
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }else
+            {
+                //继续等待文件上传
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+
 
     }
 }

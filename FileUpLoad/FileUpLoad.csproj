@@ -134,7 +134,9 @@
     <Compile Include="Models\FileBlockSaveOutput.cs" />
     <Compile Include="Models\FormFileInput.cs" />
     <Compile Include="Models\FormFileUploadInput.cs" />
+    <Compile Include="Models\FormFileUploadOuput.cs" />
     <Compile Include="Models\FormInput2.cs" />
+    <Compile Include="Models\Test2FormInput.cs" />
     <Compile Include="Models\TestFormInput.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
