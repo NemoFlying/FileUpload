@@ -72,14 +72,14 @@
     </div>
     <div class="form-item">
         <label for="file1">文件1</label>
-        <input type="file" name="file1" maxFilesSize="1024*1024*20" required="required" />
+        <input type="file" name="file1" maxFilesSize="1024*1024*1024" required="required" multiple />
     </div>
-    @*<div class="form-item">
-            <label for="file2">文件2</label>
-            <input type="file" name="file2" maxFilesSize="1024*1024*1024" />
-        </div>*@
     <div class="form-item">
-        <input type="button" value="提交" onclick="ajaxCommit2(this)" />
+            <label for="file2">文件2</label>
+            <input type="file" name="file2" maxFilesSize="1024*1024*1024"  multiple />
+    </div>
+    <div class="form-item">
+        <input type="button" value="提交" onclick="ajaxCommit3(this)" />
     </div>
 </form>
 @section scripts{
@@ -90,6 +90,71 @@
         function upLoadBlock(file) {
             
         }
+
+
+        function ajaxUploadFile(opt) {
+            var dataBlock = opt.fileInputName;                  //input file name 属性
+            var file = opt.file;                                //上传文件名
+            var blockSize = 1024 * 1024 * 3;                    //块大小
+            var totalSize = file.size;                          //文件大小
+            var blockTotal = Math.ceil(totalSize / blockSize);  //数据块总数
+            var upLoadId = null;                                //上传数据块唯一标示
+            var blockIndex = 0;                                 //上传块索引
+            var formData = new FormData();
+            formData.append('FileSaveName', file.name);
+            formData.append('BlockTotal', blockTotal);
+            formData.append('BlockIndex', blockIndex);
+            formData.append('UpLoadId', null);
+            formData.append(dataBlock, null);
+            (function upLoad() {
+                blockIndex++;
+                var start = (blockIndex - 1) * blockSize;
+                var end = Math.min(totalSize, start + blockSize);
+                formData.set(dataBlock, file.slice(start, end));
+                formData.set('BlockIndex', blockIndex);
+                formData.set('UpLoadId', upLoadId);
+                $.ajax({
+                    url: "../FileUpLoad/ReciveFile4",
+                    method: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function (reData) {
+                        if (blockIndex == 1)
+                            upLoadId = reData.UpLoadId;
+                        if (blockIndex < blockTotal) {
+                            upLoad();
+                        }
+                        else {
+                            console.log("上传成功！");
+                        }
+                    },
+                    error: function (e) {
+                        console.log(e);
+                    }
+                })
+            })();
+        }
+
+
+        function ajaxCommit3(opt) {
+            var $form = $(opt).parents("form");
+            var $fileInput = $form.find("input[type=file]");
+            $fileInput.each(function () {
+                var fileInputName = this.name;
+                $(this.files).each(function () {
+                    ajaxUploadFile({
+                        file: this,
+                        fileInputName : fileInputName
+                    });
+                })
+               
+            })
+            
+        }
+
+
 
         function ajaxCommit2(opt) {
             var $form = $(opt).parents("form");
@@ -107,7 +172,6 @@
                 formData.append('BlockIndex', index);
                 formData.append('UpLoadId', null);
                 formData.append('DataBlock', null);
-                //alert(blockCnt);
                 (function upload() {
                     index++;
                     var start = (index - 1) * blockSize;

@@ -117,7 +117,7 @@ namespace FileUpLoad.Models
                     }
                 }
                 output.UpLoadId = UpLoadId;
-                blockTempSavePath = $@"{BlockTempSavePath}\{UpLoadId}\";
+                blockTempSavePath = $@"{BlockTempSavePath}{UpLoadId}\";
 
                 blockName = $"{UpLoadId}_{BlockIndex}.block";                
                 blockFullPath = Path.Combine(blockTempSavePath, blockName);

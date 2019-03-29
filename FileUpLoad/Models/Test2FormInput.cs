@@ -10,9 +10,18 @@ namespace FileUpLoad.Models
         public string Param1 { get; set; }
         public Test2FormInput()
         {
-            FileBlockData = HttpContext.Current.Request.Files[0];
+            var files = HttpContext.Current.Request.Files;
+            FileBlockData = files[0];//一个From包含一个文件
             //配置保存地址
-            FileSavePath = @"D:\UploadTest\Temp\";
+            if(files.Keys[0]=="file1")
+            {
+                FileSavePath = @"E:\UploadTest\Temp1\";
+            }
+            else
+            {
+                FileSavePath = @"E:\UploadTest\Temp2\";
+            }
+            
         }
     }
 }
