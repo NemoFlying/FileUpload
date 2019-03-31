@@ -5,23 +5,34 @@ using System.Web;
 
 namespace FileUpLoad.Models
 {
-    public class Test2FormInput : FormFileInfo
+    public class Test2FormInput : FormFileUploadInput
     {
         public string Param1 { get; set; }
-        public Test2FormInput()
+
+        /// <summary>
+        /// 配置文件保存路径
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
+        public override string SetFileSavePath(string Key)
         {
-            var files = HttpContext.Current.Request.Files;
-            FileBlockData = files[0];//一个From包含一个文件
-            //配置保存地址
-            if(files.Keys[0]=="file1")
+            if (Key == "file1")
             {
-                FileSavePath = @"E:\UploadTest\Temp1\";
+                return @"D:\UploadTest\Temp1\"; ;
             }
             else
             {
-                FileSavePath = @"E:\UploadTest\Temp2\";
+                return  @"D:\UploadTest\Temp2\";
             }
-            
         }
+
+        public Test2FormInput()
+        {  
+
+        }
+
+
+
+
     }
 }
