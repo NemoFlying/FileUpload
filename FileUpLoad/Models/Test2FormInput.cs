@@ -18,11 +18,11 @@ namespace FileUpLoad.Models
         {
             if (Key == "file1")
             {
-                return @"D:\UploadTest\Temp1\"; ;
+                return @"E:\UploadTest\Temp1\"; ;
             }
             else
             {
-                return  @"D:\UploadTest\Temp2\";
+                return  @"E:\UploadTest\Temp2\";
             }
         }
 

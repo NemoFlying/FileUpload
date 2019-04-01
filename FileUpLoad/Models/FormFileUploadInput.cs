@@ -290,6 +290,7 @@ namespace FileUpLoad.Models
                                 fs.Write(bytes, 0, bytes.Length);
                             }
                         }
+                        output.FileSaveName = FileSaveName;
                         output.FileSaveStatus = true;
                     }
                     else

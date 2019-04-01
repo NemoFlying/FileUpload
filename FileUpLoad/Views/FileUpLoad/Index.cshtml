@@ -101,131 +101,133 @@
     <script type="text/javascript">
 
 
-        function FileHandler(opt) {
+        function FileHandler(opt, monitorCallBack) {
             this.InputFileName = opt.inputFileName;                                         // input file name 属性
             this.file = opt.file;                                                           //上传文件
-            this.fileName = this.file.name;                                                  // 文件名称
-            this.totalSize = this.file.size;                                                 //文件大小
-            this.blockTotal = Math.ceil(this.totalSize / this.blockSize);                   //数据块总数
-            this.upLoadId = null;                                                           //上传数据块唯一标示
-            this.blockIndex = 1;                                                            //上传块索引
-            this.PauseStatus = false;                                                             //暂停状态
-            this.Progress = new ProgressHandler(this);             //创建进度条
+            this.FileName = this.file.name;                                                  // 文件名称
+            this.FileSaveName = null;                                                        // 文件保存名称【后台传回】
+            this.TotalSize = this.file.size;                                                 //文件大小
+            this.UpLoadId = null;                                                           //上传数据块唯一标示
+            this.FinishedSize = 0;                                                          //已经上传文件大小
+            //上传状态
+            this.SendStatus = 0;                                                            // 0表示上传中；-1 表示中断；1上传完成
+            this.ErrMsg = null;                                                             // 异常信息
 
+            var blockIndex = 1;                                                            //上传块索引
+            var blockTotal = Math.ceil(this.TotalSize / this.BlockSize);                   //数据块总数
+            var pauseStatus = false;                                                       //暂停状态
+            var progress = (opt.Progress != null && opt.Progress !="undefined") ? new opt.Progress(this) : null;                                                   //创建进度条
+            var that = this;
+
+            var formFileInfo = {}                                                           //构建上传文件信息
+            formFileInfo.UpLoadId = '';
+            formFileInfo.BlockTotal = blockTotal;
+            formFileInfo.BlockIndex = blockIndex;
+            formFileInfo.FileName = this.FileName;
+            var formData = new FormData();                                                  //创建表单
+            formData.append("FileInfo", JSON.stringify(formFileInfo));
+            formData.append("HandleStatus", "FILESAVE");                                    //告诉后台文件保存
+            formData.append(this.InputFileName, null);
+            //暂停方法
             this.Pause = () => {
-                console.log(this.PauseStatus);
-                this.PauseStatus = true;
+                pauseStatus= true;
             };
+            //继续方法
             this.Continue = () => {
-                if (this.PauseStatus) {
-                    this.PauseStatus = false;
+                if (pauseStatus) {
+                    pauseStatus = false;
                     this.Send(this);
                 }
             };
+            //发送数据
+            this.Send = function () {
 
-
-            //上传状态
-            this.sendStatus = 0;                                                            // 0表示上传中；-1 表示中断；1上传完成
-            this.FormFileInfo = {}                                                          //构建上传文件信息
-            this.FormFileInfo.UpLoadId = '';
-            this.FormFileInfo.BlockTotal = this.blockTotal;
-            this.FormFileInfo.BlockIndex = this.blockIndex;
-            this.FormFileInfo.FileName = this.fileName;
-            this.formData = new FormData();                          //创建表单
-            this.formData.append("FileInfo", JSON.stringify(this.FormFileInfo));
-            this.formData.append("HandleStatus", "FILESAVE");            //告诉后台文件保存
-            this.formData.append(this.InputFileName, null);
-        }
-        FileHandler.prototype.blockSize = 1024 * 1024 * 3; //设置每次上传块的大小
-        FileHandler.prototype.Send = function (that) {
-            console.log(that.PauseStatus);
-            if (that.PauseStatus) {
-                //暂停
-                return false;
-            }
-            that.sendStatus = 0;  //表示传送中
-            var start = (that.blockIndex - 1) * that.blockSize;
-            var end = Math.min(that.totalSize, start + that.blockSize);
-            that.formData.set(that.InputFileName, that.file.slice(start, end));
-            that.FormFileInfo.UpLoadId = that.upLoadId;
-            that.FormFileInfo.BlockIndex = that.blockIndex;
-            that.formData.set("FileInfo", JSON.stringify(that.FormFileInfo));
-            $.ajax({
-                url: "../FileUpLoad/ReciveFile4",
-                method: 'POST',
-                data: that.formData,
-                contentType: false,
-                processData: false,
-                dataType: 'json',
-                success: function (reData) {
-                    if (reData.BlockSaveStatus) {
-                        that.blockIndex++;
-                        if (that.blockIndex == 2) {
-                            that.upLoadId = reData.UpLoadId;
-                        }
-                        if (that.blockIndex <= that.blockTotal) {
-                            that.Send(that);
-                        }
-                        else {
-                            that.sendStatus = 1;
-                            console.log("上传成功！");
-                        }
-                    }else {
-                        //终止上传
-                        that.sendStatus = -1;
-                    }
-                },
-                error: function (e) {
-                    //终止上传
-                    that.sendStatus = -1;
-                },
-                complete: function () {
-                    //if (typeof (progress) == "function")
-                    //    progress(that);
-                    that.Progress(that);
+                if (pauseStatus) {
+                    //暂停
+                    return false;
                 }
-            });
+                this.SendStatus = 0;  //表示传送中
+                var start = (blockIndex - 1) * this.BlockSize;
+                var end = Math.min(this.TotalSize, start + this.BlockSize);
+                formData.set(this.InputFileName, this.file.slice(start, end));
+                formFileInfo.UpLoadId = this.UpLoadId;
+                formFileInfo.BlockIndex = blockIndex;
+                formData.set("FileInfo", JSON.stringify(formFileInfo));
+                $.ajax({
+                    url: "../FileUpLoad/ReciveFile4",
+                    method: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function (reData) {
+                        if (reData.BlockSaveStatus) {
+                            blockIndex++;
+                            if (blockIndex == 2) {
+                                that.UpLoadId = reData.UpLoadId;
+                            }
+                            if (blockIndex <= blockTotal) {
+                                that.Send();
+                            }
+                            else {
+                                if (reData.FileSaveStatus) {
+                                    that.SendStatus = 1;
+                                    //文件保存成功后操作
+                                } else {
+                                    that.SendStatus = -1;
+                                    that.ErrMsg = reData.FileSaveErrMsg;
+                                }
+                                
+                            }
+                        } else {
+                            //后台传来异常
+                            that.SendStatus = -1;
+                            that.ErrMsg = reData.FileSaveErrMsg;
+                        }
+                    },
+                    error: function (e) {
+                        that.SendStatus = -1;
+                        that.ErrMsg = e;
+                    },
+                    complete: function () {
+                        that.FinishedSize =
+                            (blockIndex - 1) * that.BlockSize > that.TotalSize ? that.TotalSize : (blockIndex - 1) * that.BlockSize;
+                        if (typeof (progress) == "function") {
+                            progress();
+                        }
+                        if (typeof (monitorCallBack) == "function") {
+                            monitorCallBack(that);
+                        }
+                    }
+                });
+            }
+
+            
         }
 
 
-
-
-        //暂停文件上传
-        //FileHandler.prototype.Pause = () => {
-        //    console.log(this.PauseStatus);
-        //    this.PauseStatus = true;
-        //}
-        //继续上传文件
-        //FileHandler.prototype.Continue = () => {
-        //    if (this.PauseStatus) {
-        //        this.PauseStatus = false;
-        //        this.Send(this);
-        //    }
-        //}
-
+        FileHandler.prototype.BlockSize = 1024 * 1024 * 3; //设置每次上传块的大小
 
         //进度条类//可以定制
         //文件名称
-        function ProgressHandler(opt) {
+        function ProgressHandler(objControl) {
             var progress = $("div.progress-total").clone();
             progress.removeClass("progress-total");
-            progress.find("h4").text(opt.fileName);
+            progress.find("h4").text(objControl.FileName);
             $("div.progress-group").append(progress);
             progress.find("button.pause").click(function () {
-                opt.Pause();
+                objControl.Pause();
             });
             progress.find("button.play").click(function () {
-                opt.Continue();
-            })
-            return (status) => {
-                console.log(status.blockIndex);
+                objControl.Continue();
+            });
+            //返回一个控制进度条的方法
+            //当进度有更新的时候会执行该方法
+            return () => {
                 progress.find(".progress-bar")
-                    .css("width", Math.ceil((status.blockIndex <= status.blockTotal ? (status.blockIndex - 1) * status.blockSize : status.totalSize) * 100 / status.totalSize) + "%");
+                    .css("width", Math.ceil((objControl.FinishedSize / objControl.TotalSize) * 100) + "%");
             }
         }
-
-
-
 
         function ajaxUploadFile(opt, funProgress) {
             var blockSize = 1024 * 1024 * 3;                    //块大小
@@ -314,97 +316,84 @@
             })();
         }
 
-        //function ajaxUploadFile(opt) {
-        //    var dataBlock = opt.fileInputName;                  //input file name 属性
-        //    var file = opt.file;                                //上传文件名
-        //    var blockSize = 1024 * 1024 * 3;                    //块大小
-        //    var totalSize = file.size;                          //文件大小
-        //    var blockTotal = Math.ceil(totalSize / blockSize);  //数据块总数
-        //    var upLoadId = null;                                //上传数据块唯一标示
-        //    var blockIndex = 0;                                 //上传块索引
-        //    var formData = new FormData();
-        //    formData.append('FileName', file.name);
-        //    formData.append('BlockTotal', blockTotal);
-        //    formData.append('BlockIndex', blockIndex);
-        //    formData.append('UpLoadId', '');
-        //    formData.append(dataBlock, null);
-        //    (function upLoad() {
-        //        blockIndex++;
-        //        var start = (blockIndex - 1) * blockSize;
-        //        var end = Math.min(totalSize, start + blockSize);
-        //        formData.set(dataBlock, file.slice(start, end));
-        //        formData.set('BlockIndex', blockIndex);
-        //        formData.set('UpLoadId', upLoadId);
-        //        $.ajax({
-        //            url: "../FileUpLoad/ReciveFile4",
-        //            method: 'POST',
-        //            data: formData,
-        //            contentType: false,
-        //            processData: false,
-        //            dataType: 'json',
-        //            success: function (reData) {
-        //                if (blockIndex == 1)
-        //                    upLoadId = reData.UpLoadId;
-        //                if (blockIndex < blockTotal) {
-        //                    upLoad();
-        //                }
-        //                else {
-        //                    console.log("上传成功！");
-        //                }
-        //            },
-        //            error: function (e) {
-        //                console.log(e);
-        //            }
-        //        })
-        //    })();
-        //}
-
-
         function ajaxCommit3(opt) {
             var $form = $(opt).parents("form");
             var $fileInput = $form.find("input[type=file]");
 
-            var filesStatus = {};
-            filesStatus.fileHandlers = [];
-            filesStatus.TotalFileCnt = 0;
-            filesStatus.FinishedFileCnt = 0;
-            filesStatus.TotalSize = 0;
-            filesStatus.FinishedSize = 0;
+            //记录表单中所有文件上传信息
+            var allFileInfo = {};
+            allFileInfo.FileName = "总进度";
+            allFileInfo.FinishedSize = 0;
+            allFileInfo.TotalSize = 0;
+            allFileInfo.TotalFileCnt = 0;
+            allFileInfo.FinishedFileCnt = 0;
+            allFileInfo.FileHandlers = [];
+
+            //循环input表单中所有的File文件
             $fileInput.each(function () {
                 $(this.files).each(function () {
-                    filesStatus.TotalFileCnt += 1;
-                    filesStatus.TotalSize += this.size;
+                    allFileInfo.TotalFileCnt += 1;
+                    allFileInfo.TotalSize += this.size;
                 });
             });
 
+            //创建总进度条
+            var allProgress = new ProgressHandler(allFileInfo);     
+
+            //对表单中包含文件依次上传
             $fileInput.each(function () {
                 var inputFileName = this.name;
                 $(this.files).each(function () {
                     var that = this;
-                    var handler = new FileHandler({ file: that, inputFileName: inputFileName });
-                    filesStatus.fileHandlers.push(handler);
-                    handler.Send(handler, function (that) {
-                        switch (that.sendStatus) {
+                    var handler = new FileHandler({
+                        file: that,
+                        inputFileName: inputFileName,
+                        Progress: ProgressHandler                   //传递创建进度条的方法
+                    }, (objFile) => {                               //监控每个文件上传状态
+                        switch (objFile.SendStatus) {
                             case 0:
                                 //传输中
-                                filesStatus.FinishedSize += that.blockSize;
+                                allFileInfo.FinishedSize += objFile.BlockSize;
                                 break;
                             case 1:
                                 //完成传输
-                                filesStatus.FinishedSize += that.totalSize % that.blockSize;
-                                filesStatus.FinishedFileCnt += 1;
+                                allFileInfo.FinishedSize += objFile.TotalSize % objFile.BlockSize;
+                                allFileInfo.FinishedFileCnt += 1;
+                                if (allFileInfo.FinishedFileCnt == allFileInfo.TotalFileCnt) {
+                                    //所有文件传送完成
+                                    alert("上传完成！");
+                                }
                                 break;
                             case -1:
+                                //发生异常//等待指令
                                 break;
                         }
-                        console.log(that.fileName + "完成进度:" + Math.ceil((that.blockIndex <= that.blockTotal ? (that.blockIndex - 1) * that.blockSize : that.totalSize)    * 100 / that.totalSize));
-                        console.log("总进度：" + filesStatus.FinishedSize + "/" + filesStatus.TotalSize + ";" + filesStatus.FinishedFileCnt + "/" + filesStatus.TotalFileCnt);
+                        allProgress(allFileInfo);
                     });
+                    allFileInfo.FileHandlers.push(handler);
+                    handler.Send(handler);
                 });
             });
 
+            //当表单中的文件上传成功后调用
+            var sendFormInfo = function () {
+                var newForm = new FormData();
 
-            
+                $fileInput.each(function () {
+                    alert(this.name);
+                    newForm.delete(this.name);//删除file空间部分
+                });
+            }
+            newForm.append("HandleStatus", "FORMSAVE");
+            var filesInput = [];
+            $.allFileInfo.each(function () {
+                var obj = {};
+                obj.Key = this.InputFileName;
+                obj.UpLoadId = this.UpLoadId;
+                obj.FileSaveName = this.FileSaveName;
+            })
+
+
         }
 
 
