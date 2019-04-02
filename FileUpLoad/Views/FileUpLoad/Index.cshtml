@@ -53,16 +53,16 @@
         <label for="Param1">自定义参数</label>
         <input type="text" name="Param1" required placeholder="第一个传入参数" value="参数一" />
     </div>
-    <div class="form-item">
+    @*<div class="form-item">
         <label for="file1">文件1</label>
         <input type="file" name="file1" maxFilesSize="1024*1024*20" required="required" />
-    </div>
+    </div>*@
     @*<div class="form-item">
         <label for="file2">文件2</label>
         <input type="file" name="file2" maxFilesSize="1024*1024*1024" />
     </div>*@
     <div class="form-item">
-        <input type="button" value="提交" onclick="ajaxCommit1(this)" />
+        <input type="button" value="提交" onclick="ajaxCommit4(this)" />
     </div>
 </form>
 <form action="../FileUpLoad/ReciveFile4" method="post" enctype="multipart/form-data">
@@ -79,7 +79,7 @@
             <input type="file" name="file2" maxFilesSize="1024*1024*1024"  multiple />
     </div>
     <div class="form-item">
-        <input type="button" value="提交" onclick="ajaxCommit3(this)" />
+        <input type="button" value="提交" onclick="ajaxCommit4(this)" />
     </div>
 </form>
 <div  class="progress-group"  style="border:2px solid blue">
@@ -97,7 +97,7 @@
 </div>
 
 @section scripts{
-    <script src="~/Scripts/jquery.nemo.ajaxform.js"></script>
+    <script src="~/Scripts/jquery-nemo-ajaxfileform.js"></script>
     <script type="text/javascript">
 
         //创建一个中文件信息
@@ -522,7 +522,23 @@
 
         }
 
-
+        function ajaxCommit4(opt) {
+            var $form = $(opt).parents("form");
+            $.nemoajax({
+                url: "../FileUpLoad/ReciveFile4",
+                method: "POST",
+                form: $form.find("input[type=file]"),
+                contentType: false,
+                processData: false,//避免对formData序列化处理
+                dataType: "json",
+                success: function (reData) {
+                    console.log(reData);
+                },
+                error: function (reData) {
+                    console.log(reData);
+                }
+            }).SendFileOnly();
+        }
 
         //function ajaxCommit2(opt) {
         //    var $form = $(opt).parents("form");

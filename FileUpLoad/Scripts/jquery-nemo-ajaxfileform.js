@@ -12,7 +12,7 @@
         beforeSend: function () { },
         cache: true,
         complete: function () { },
-        form: null,
+        form: null,                         //上传的表单jQuery 对象 或者 input File对象
         ProgressHandler: ProgressHandler
     }
 
@@ -86,6 +86,7 @@
         },
         //触发时间【发布事件】
         emit: function (eventType) {
+            
             var self = this;
             var handlerArgs = Array.prototype.slice.call(arguments, 1);
             for (var i = 0; i < self.EventHandlers[eventType].length; i++) {
@@ -187,7 +188,6 @@
         }
     }
 
-
     //所有文件管理类
     //包含当前上传的所有文件
     function AllFileHandler() {
@@ -213,7 +213,7 @@
         emit: function (eventType) {
             var self = this;
             var handlerArgs = Array.prototype.slice.call(arguments, 1);
-            for (var i = 0; i < self.EventHandlers[eventType].length; i++) {
+            for (var i = 0; self.EventHandlers[eventType] && i < self.EventHandlers[eventType].length; i++) {
                 self.EventHandlers[eventType][i].apply(self, handlerArgs);
             }
             return self;
@@ -250,14 +250,60 @@
         }
     }
 
-    
-
-    $.fn.nemoajaxfileform = function (opt) {
-        $.extend(defaults, opt);
-
-        var $form = form;
+    //上传表单数据（包含文件）
+    function SendWithFile() {
+        var $form = defaults.form;
         var $fileInput = $form.find("input[type=file]");
+        if ($fileInput.length <= 0) {
+            SendFormNoFile($form);
+            return;
+        }
+        SendFileOnly($fileInput, SendWithOutFile);//单独将文件上传后调用保存表单信息数据
+    }
 
+    //上传表单数据不包含文件
+    //若表单中包含 file 自动剔除
+    function SendWithOutFile(allFiles) {
+        //console.log("SendWithOutFile");
+        var $form = defaults.form;
+        var newForm = new FormData($form[0]);
+        //删除表单中 file 元素
+        $form.find("input[type=file]").each(function () {
+            newForm.delete(this.name);
+        });
+        //后台根据HandleStatus来判断是保存文件还是保存表单非文件信息
+        newForm.append("HandleStatus", "FORMSAVE");
+        if (allFiles != null && allFiles.length>0) {
+            //添加已经上传文件信息
+            let filesInput = [];
+            $(allFiles).each(function () {
+                let obj = {};
+                obj.Key = this.InputFileName;
+                obj.UpLoadId = this.UpLoadId;
+                obj.FileSaveName = this.FileSaveName;
+                obj.WebUrl = this.WebUrl;
+                filesInput.push(obj);
+            });
+            newForm.append("FileListInfoJson", JSON.stringify(filesInput)); //后台反序列化为想要的对象
+        }
+        //保存表单非文件信息
+        $.ajax({
+            url: defaults.url,
+            method: 'POST',
+            data: newForm,
+            contentType: false,
+            processData: false,
+            dataType: 'json',
+            success: defaults.success,
+            error: defaults.error,
+            complete: defaults.complete
+        });
+    }
+
+    //上传文件单个input file 对应
+    function SendFileOnly($fileInput, endSendCallback) {
+        //console.log("SendFileOnly");
+        $fileInput = $fileInput == undefined ? defaults.form : $fileInput;
         var allFileInfo = new AllFileHandler();
         allFileInfo.FileName = "总进度";
         allFileInfo.FinishedSize = 0;
@@ -271,15 +317,16 @@
                 allFileInfo.TotalSize += this.size;
             });
         });
-        //创建总进度条
-        opt.ProgressHandler(allFileInfo);
-
+        if (allFileInfo.TotalFileCnt > 1) {
+            //当文件个数大于1的时候创建总进度条
+            defaults.ProgressHandler(allFileInfo);
+        }
         //对表单中包含文件依次上传
         $fileInput.each(function () {
             var inputFileName = this.name;
             $(this.files).each(function () {
                 var fileHandler = new FileHandler({ file: this, inputFileName: inputFileName });
-                opt.ProgressHandler(fileHandler);                                                //创建一个该文件的控制
+                defaults.ProgressHandler(fileHandler);                                                //创建一个该文件的控制
 
                 //订阅sendChange事件，获取每个文件上传信息
                 fileHandler.on('sendChange', function () {
@@ -294,8 +341,13 @@
                             allFileInfo.FinishedFileCnt += 1;
                             if (allFileInfo.FinishedFileCnt == allFileInfo.TotalFileCnt) {
                                 allFileInfo.SendStatus = this.SendStatus;
-                                sendFormInfo();
-                                alert("上传完成！");
+                                if (typeof (endSendCallback) == "function") {
+                                    console.log("***********");
+                                    endSendCallback(allFileInfo.Files);
+                                } else {
+                                    defaults.success(allFileInfo.Files);
+                                }
+                                //console.log("上传完成！");
                             }
                             break;
                         case -1:
@@ -309,13 +361,15 @@
                 fileHandler.Send.apply(fileHandler); //一定要带上作用域
             });
         });
+    }
 
-
-
-
-
-
-
+    $.nemoajax = function (opt) {
+        $.extend(defaults, opt);
+        return {
+            SendWithFile: SendWithFile,
+            SendWithOutFile: SendWithOutFile,
+            SendFileOnly: SendFileOnly
+        };
     }
 
 })(jQuery)
