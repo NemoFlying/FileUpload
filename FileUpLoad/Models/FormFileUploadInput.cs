@@ -17,7 +17,11 @@ namespace FileUpLoad.Models
         public FormFileUploadInput()
         {
             var files = HttpContext.Current.Request.Files;
-            _fileInfo = JsonConvert.DeserializeObject<FormFileInfo>(HttpContext.Current.Request.Form["FileInfo"]);
+            var fileInfoJson = HttpContext.Current.Request.Form["FileInfo"];
+            _fileInfo = fileInfoJson == null ? null : JsonConvert.DeserializeObject<FormFileInfo>(fileInfoJson);
+            var fileInfoListJson = HttpContext.Current.Request.Form["FileListInfoJson"];
+            FileListInfo = fileInfoListJson == null ? null : JsonConvert.DeserializeObject<List<FormFileSaveStatus>>(fileInfoListJson);
+
             if (files != null && files.Count > 0)
             {
                 //表示有文件上传
@@ -74,6 +78,8 @@ namespace FileUpLoad.Models
         /// </summary>
         public List<FormFileSaveStatus> FileListInfo { get; set; }
 
+        public string FileListInfoJson { get; set; }
+
         /// <summary>
         /// 保存当前传入的文件块
         /// </summary>
@@ -93,7 +99,11 @@ namespace FileUpLoad.Models
                 var fileFullPath = Path.Combine(SetFileSavePath(item.Key), item.FileSaveName);
                 var tmpFullPath = $@"{SetFileTmpSavePath(item.Key)}{item.UpLoadId}\";
                 File.Delete(fileFullPath);
-                Directory.Delete(tmpFullPath, true);
+                if(Directory.Exists(tmpFullPath))
+                {
+                    Directory.Delete(tmpFullPath, true);
+                }
+                
             }
         }
 
